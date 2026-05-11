@@ -133,22 +133,25 @@ button{
   margin:0;
   padding:0;
   font-size:14px;
-  cursor:pointer;
   user-select:none;
   -webkit-user-select:none;
   touch-action:manipulation;
-  background:black;
-  color:#FFD700;
-  border:1px solid #FFD700;
-  display:none;
-}
-
-#bonusBtn:active{
-  background:#1a1a00;
+  background:#1a1a1a;
+  color:#555;
+  border:1px solid #555;
+  cursor:default;
 }
 
 #bonusBtn.hasBonus{
+  color:#FFD700;
+  border-color:#FFD700;
+  cursor:pointer;
+  background:black;
   animation:bonusPulse 1s infinite;
+}
+
+#bonusBtn.hasBonus:active{
+  background:#1a1a00;
 }
 
 @keyframes bonusPulse{
@@ -183,6 +186,9 @@ button{
   <div class="hud-row">
     <div>PUNTOS: <span id="score">0</span></div>
     <div>COMBO: <span id="combo">0</span></div>
+  </div>
+  <div class="hud-row">
+    <div>BONUS: <span id="bonusCount">1</span> 💥</div>
   </div>
 </div>
 
@@ -251,7 +257,7 @@ let score,combo,lives,level;
 let running=true;
 let paused=false;
 let flash=0;
-let bonusReady=false;
+let bonusShots=1;
 let bonusTarget=1000;
 
 // ================= INIT =================
@@ -266,9 +272,8 @@ function init(){
   lives=3;
   level=1;
   running=true;
-  bonusReady=false;
+  bonusShots=1;
   bonusTarget=1000;
-  document.getElementById("bonusBtn").style.display="none";
 
   generateNodes();
 }
@@ -344,7 +349,7 @@ document.getElementById("pulseBtn").addEventListener("click",()=>{
 document.getElementById("pauseBtn").addEventListener("click",togglePause);
 
 document.getElementById("bonusBtn").addEventListener("click",()=>{
-  if(!running||paused||!bonusReady) return;
+  if(!running||paused||bonusShots<=0) return;
   let px=player.x, py=player.y;
   let collected=0;
   nodes.forEach(n=>{
@@ -357,9 +362,8 @@ document.getElementById("bonusBtn").addEventListener("click",()=>{
   score+=collected*10;
   if(collected>0) combo+=collected;
   beep(600,0.3);
-  bonusReady=false;
-  bonusTarget+=1000;
-  document.getElementById("bonusBtn").style.display="none";
+  bonusShots--;
+  if(bonusShots<=0) document.getElementById("bonusBtn").classList.remove("hasBonus");
 });
 
 // ================= WAVE =================
@@ -417,9 +421,9 @@ function update(){
       score+=10;
       combo++;
 
-      if(score>=bonusTarget&&!bonusReady){
-        bonusReady=true;
-        document.getElementById("bonusBtn").style.display="flex";
+      if(score>=bonusTarget){
+        bonusShots++;
+        bonusTarget+=1000;
         document.getElementById("bonusBtn").classList.add("hasBonus");
         beep(900,0.3);
       }
@@ -527,6 +531,7 @@ function updateUI(){
   document.getElementById("combo").innerText=combo;
   document.getElementById("lives").innerText="❤️".repeat(lives);
   document.getElementById("level").innerText=level;
+  document.getElementById("bonusCount").innerText=bonusShots;
 }
 
 // ================= GAME OVER =================
@@ -547,6 +552,7 @@ function restart(){
 
 // ================= START =================
 init();
+document.getElementById("bonusBtn").classList.add("hasBonus");
 update();
 draw();
 
