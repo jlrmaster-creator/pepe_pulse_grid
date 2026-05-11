@@ -70,6 +70,7 @@ button{
 /* CONTROLS */
 #controls{
   margin-top:10px;
+  width:340px;
   position:relative;
   display:flex;
   justify-content:center;
@@ -104,7 +105,7 @@ button{
 #pauseBtn{
   position:absolute;
   top:0;
-  right:0;
+  right:-10px;
   width:36px;
   height:36px;
   margin:0;
@@ -121,6 +122,38 @@ button{
 
 #pauseBtn:active{
   background:#1a2a1a;
+}
+
+#bonusBtn{
+  position:absolute;
+  top:0;
+  left:-10px;
+  width:36px;
+  height:36px;
+  margin:0;
+  padding:0;
+  font-size:14px;
+  cursor:pointer;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:manipulation;
+  background:black;
+  color:#FFD700;
+  border:1px solid #FFD700;
+  display:none;
+}
+
+#bonusBtn:active{
+  background:#1a1a00;
+}
+
+#bonusBtn.hasBonus{
+  animation:bonusPulse 1s infinite;
+}
+
+@keyframes bonusPulse{
+  0%,100%{box-shadow:0 0 5px #FFD700;}
+  50%{box-shadow:0 0 15px #FFD700;}
 }
 
 /* PAUSE OVERLAY */
@@ -181,6 +214,7 @@ button{
     <div></div>
   </div>
   <button id="pauseBtn">⏸</button>
+  <button id="bonusBtn">💥</button>
 </div>
 
 <script>
@@ -217,6 +251,8 @@ let score,combo,lives,level;
 let running=true;
 let paused=false;
 let flash=0;
+let bonusReady=false;
+let bonusTarget=1000;
 
 // ================= INIT =================
 function init(){
@@ -230,6 +266,9 @@ function init(){
   lives=3;
   level=1;
   running=true;
+  bonusReady=false;
+  bonusTarget=1000;
+  document.getElementById("bonusBtn").style.display="none";
 
   generateNodes();
 }
@@ -304,6 +343,25 @@ document.getElementById("pulseBtn").addEventListener("click",()=>{
 
 document.getElementById("pauseBtn").addEventListener("click",togglePause);
 
+document.getElementById("bonusBtn").addEventListener("click",()=>{
+  if(!running||paused||!bonusReady) return;
+  let px=player.x, py=player.y;
+  let collected=0;
+  nodes.forEach(n=>{
+    if(!n.active&&Math.abs(n.x-px)<=5&&Math.abs(n.y-py)<=5){
+      n.active=true;
+      collected++;
+      wave(n.x,n.y);
+    }
+  });
+  score+=collected*10;
+  if(collected>0) combo+=collected;
+  beep(600,0.3);
+  bonusReady=false;
+  bonusTarget+=1000;
+  document.getElementById("bonusBtn").style.display="none";
+});
+
 // ================= WAVE =================
 function wave(x,y){
   waves.push({x,y,r:0,a:1});
@@ -329,7 +387,7 @@ function nextLevel(){
 
   generateNodes();
 
-  if(lives<3) lives++;
+  if(level===3&&lives<3) lives++;
 
   combo=0;
 
@@ -358,6 +416,13 @@ function update(){
 
       score+=10;
       combo++;
+
+      if(score>=bonusTarget&&!bonusReady){
+        bonusReady=true;
+        document.getElementById("bonusBtn").style.display="flex";
+        document.getElementById("bonusBtn").classList.add("hasBonus");
+        beep(900,0.3);
+      }
 
       beep(600,0.05);
       wave(n.x,n.y);
