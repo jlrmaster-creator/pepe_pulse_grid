@@ -66,6 +66,81 @@ button{
   color:#7CFFB2;
   border:1px solid #7CFFB2;
 }
+
+/* CONTROLS */
+#controls{
+  width:340px;
+  margin-top:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.dpad{
+  display:grid;
+  grid-template-columns:50px 50px 50px;
+  grid-template-rows:50px 50px 50px;
+  gap:2px;
+}
+
+.dpad button{
+  width:50px;
+  height:50px;
+  margin:0;
+  padding:0;
+  font-size:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:manipulation;
+}
+
+.dpad button:active{
+  background:#1a2a1a;
+}
+
+.dpad-empty{
+  visibility:hidden;
+}
+
+.actions{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.actions button{
+  width:80px;
+  height:50px;
+  margin:0;
+  font-size:14px;
+  cursor:pointer;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:manipulation;
+}
+
+.actions button:active{
+  background:#1a2a1a;
+}
+
+/* PAUSE OVERLAY */
+#pauseOverlay{
+  position:absolute;
+  top:10px;
+  left:10px;
+  width:300px;
+  height:300px;
+  display:none;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:rgba(0,0,0,0.85);
+  border:1px solid rgba(124,255,178,0.5);
+}
 </style>
 </head>
 
@@ -90,6 +165,28 @@ button{
   <p>Puntuación: <span id="finalScore">0</span></p>
   <button onclick="restart()">REINICIAR</button>
 </div>
+
+<div id="pauseOverlay">
+  <h1 style="color:#7CFFB2">PAUSA</h1>
+  <button onclick="togglePause()">REANUDAR</button>
+</div>
+</div>
+
+<div id="controls">
+  <div class="dpad">
+    <div></div>
+    <button data-dir="0,-1">▲</button>
+    <div></div>
+    <button data-dir="-1,0">◀</button>
+    <button id="pulseBtn">⚡</button>
+    <button data-dir="1,0">▶</button>
+    <div></div>
+    <button data-dir="0,1">▼</button>
+    <div></div>
+  </div>
+  <div class="actions">
+    <button id="pauseBtn">⏸ PAUSA</button>
+  </div>
 </div>
 
 <script>
@@ -124,6 +221,7 @@ const tile=20;
 let player,nodes,glitches,waves;
 let score,combo,lives,level;
 let running=true;
+let paused=false;
 let flash=0;
 
 // ================= INIT =================
@@ -164,6 +262,13 @@ window.addEventListener("keydown",(e)=>{
 
   if(!running) return;
 
+  if(e.key==="Escape"||e.key==="p"){
+    togglePause();
+    return;
+  }
+
+  if(paused) return;
+
   if(e.key==="ArrowUp") setDir(0,-1);
   if(e.key==="ArrowDown") setDir(0,1);
   if(e.key==="ArrowLeft") setDir(-1,0);
@@ -180,6 +285,30 @@ function turn(){
   let d=player.dir;
   player.dir={x:-d.y,y:d.x};
 }
+
+// ================= PAUSE =================
+function togglePause(){
+  if(!running) return;
+  paused=!paused;
+  document.getElementById("pauseOverlay").style.display=paused?"flex":"none";
+  if(!paused) beep(600,0.05);
+}
+
+// ================= BUTTON CONTROLS =================
+document.querySelectorAll("[data-dir]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    if(!running||paused) return;
+    let [x,y]=btn.dataset.dir.split(",").map(Number);
+    setDir(x,y);
+  });
+});
+
+document.getElementById("pulseBtn").addEventListener("click",()=>{
+  if(!running||paused) return;
+  turn();
+});
+
+document.getElementById("pauseBtn").addEventListener("click",togglePause);
 
 // ================= WAVE =================
 function wave(x,y){
@@ -218,6 +347,7 @@ function nextLevel(){
 function update(){
 
   if(!running) return;
+  if(paused){setTimeout(update,120);return;}
 
   player.x+=player.dir.x;
   player.y+=player.dir.y;
@@ -342,6 +472,8 @@ function updateUI(){
 // ================= GAME OVER =================
 function gameOver(){
   running=false;
+  paused=false;
+  document.getElementById("pauseOverlay").style.display="none";
   document.getElementById("finalScore").innerText=score;
   document.getElementById("gameOver").style.display="flex";
 }
