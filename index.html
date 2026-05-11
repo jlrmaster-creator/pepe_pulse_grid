@@ -407,7 +407,8 @@ function update(){
   checkLevel();
   updateUI();
 
-  setTimeout(update,120);
+  let speed = Math.max(80, 220 - level * 15);
+  setTimeout(update,speed);
 }
 
 // ================= DRAW =================
